@@ -27,9 +27,11 @@ import Data.Word (Word32, Word8, Word64)
 import Data.Bits ((.|.), shiftL, shiftR, complement)
 import Data.Ratio ((%)) -- For fromRational test
 import System.Exit      (exitFailure)
-import Test.QuickCheck  (quickCheckResult, isSuccess, Result)
+import Test.QuickCheck  (quickCheckResult, isSuccess, Result, Property, counterexample, (===), (==>))
 import Test.QuickCheck.Modifiers (NonZero(..), Small(..))
 import Control.DeepSeq (deepseq)
+import Control.Exception (ErrorCall(..), evaluate, try)
+import qualified Test.QuickCheck.Monadic as QCM
 
 -- Arbitrary instance for M31, mirroring the Rust Distribution<M31> test.
 -- It now uses the mkM31 imported from Field.M31.
@@ -285,6 +287,96 @@ prop_signum_values :: M31 -> Bool
 prop_signum_values x = signum x == 0 || signum x == 1
 
 ------------------------------------------------------------------------
+-- 9. Error condition tests and additional properties
+------------------------------------------------------------------------
+
+prop_inverse_zero :: Property
+prop_inverse_zero = QCM.monadicIO $ do
+  let expectedMsg = "M31.inverse: zero has no multiplicative inverse"
+  result <- QCM.run $ try (evaluate (inverse (fromInteger 0 :: M31)))
+  case result of
+    Left (ErrorCall actualMsg) ->
+      if actualMsg == expectedMsg
+      then QCM.assert True -- Test passes
+      else QCM.stop (counterexample
+             ("prop_inverse_zero FAIL: Unexpected message.\n  Expected: '" ++ expectedMsg ++ "'\n  Got:      '" ++ actualMsg ++ "'")
+             False)
+    Right val -> -- Assuming evaluate (error ...) only throws ErrorCall, other Left cases are unreachable
+      QCM.stop (counterexample
+             ("prop_inverse_zero FAIL: Expected an exception, Got value: " ++ show val)
+             False)
+
+prop_division_by_zero :: M31 -> Property
+prop_division_by_zero x = QCM.monadicIO $ do
+  let expectedMsg = "M31.inverse: zero has no multiplicative inverse"
+  result <- QCM.run $ try (evaluate (x / (fromInteger 0 :: M31)))
+  case result of
+    Left (ErrorCall actualMsg) ->
+      if actualMsg == expectedMsg
+      then QCM.assert True
+      else QCM.stop (counterexample
+             ("prop_division_by_zero FAIL: Unexpected message.\n  Expected: '" ++ expectedMsg ++ "'\n  Got:      '" ++ actualMsg ++ "'")
+             False)
+    Right val ->
+      QCM.stop (counterexample
+             ("prop_division_by_zero FAIL: Expected an exception, Got value: " ++ show val)
+             False)
+
+prop_fromRational_zero_denominator :: Property
+prop_fromRational_zero_denominator = 
+  forAll (choose (1, fromIntegral modulus - 1) :: Gen Integer) $ \num -> 
+  QCM.monadicIO $ do
+    let expectedMsg = "M31.inverse: zero has no multiplicative inverse"
+    let rat = num % fromIntegral modulus -- Denominator will be 0 in M31, Numerator non-zero
+    result <- QCM.run $ try (evaluate (fromRational rat :: M31))
+    case result of
+      Left (ErrorCall actualMsg) ->
+        if actualMsg == expectedMsg
+        then QCM.assert True
+        else QCM.stop (counterexample
+               ("prop_fromRational_zero_denominator FAIL: Unexpected message.\n  Expected: '" ++ expectedMsg ++ "'\n  Got:      '" ++ actualMsg ++ "'")
+               False)
+      Right val ->
+        QCM.stop (counterexample
+               ("prop_fromRational_zero_denominator FAIL: Expected an exception, Got value: " ++ show val ++ " (Input num: " ++ show num ++ ")")
+               False)
+
+prop_quotRem_by_zero :: M31 -> Property
+prop_quotRem_by_zero x = QCM.monadicIO $ do
+  let expectedMsg = "M31.quotRem: division by zero"
+  result <- QCM.run $ try (evaluate (quotRem x (fromInteger 0 :: M31)))
+  case result of
+    Left (ErrorCall actualMsg) ->
+      if actualMsg == expectedMsg
+      then QCM.assert True
+      else QCM.stop (counterexample
+             ("prop_quotRem_by_zero FAIL: Unexpected message.\n  Expected: '" ++ expectedMsg ++ "'\n  Got:      '" ++ actualMsg ++ "'")
+             False)
+    Right val ->
+      QCM.stop (counterexample
+             ("prop_quotRem_by_zero FAIL: Expected an exception, Got value: " ++ show (fst val, snd val)) -- Show tuple
+             False)
+
+prop_divMod_by_zero :: M31 -> Property
+prop_divMod_by_zero x = QCM.monadicIO $ do
+  let expectedMsg = "M31.divMod: division by zero"
+  result <- QCM.run $ try (evaluate (divMod x (fromInteger 0 :: M31)))
+  case result of
+    Left (ErrorCall actualMsg) ->
+      if actualMsg == expectedMsg
+      then QCM.assert True
+      else QCM.stop (counterexample
+             ("prop_divMod_by_zero FAIL: Unexpected message.\n  Expected: '" ++ expectedMsg ++ "'\n  Got:      '" ++ actualMsg ++ "'")
+             False)
+    Right val ->
+      QCM.stop (counterexample
+             ("prop_divMod_by_zero FAIL: Expected an exception, Got value: " ++ show (fst val, snd val)) -- Show tuple
+             False)
+
+prop_subtraction_law :: M31 -> M31 -> Bool
+prop_subtraction_law a b = (a - b) + b == a
+
+------------------------------------------------------------------------
 -- Run them all
 ------------------------------------------------------------------------
 run :: Result -> IO Bool      -- helper
@@ -331,5 +423,12 @@ main = do
         , run =<< quickCheckResult prop_shift_roundtrip
         , run =<< quickCheckResult prop_abs_is_identity
         , run =<< quickCheckResult prop_signum_values
+        -- New tests for error conditions and subtraction
+        , run =<< quickCheckResult prop_inverse_zero
+        , run =<< quickCheckResult prop_division_by_zero
+        , run =<< quickCheckResult prop_fromRational_zero_denominator
+        , run =<< quickCheckResult prop_quotRem_by_zero
+        , run =<< quickCheckResult prop_divMod_by_zero
+        , run =<< quickCheckResult prop_subtraction_law
         ]
   if not ok then exitFailure else return ()
