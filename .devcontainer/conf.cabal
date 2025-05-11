@@ -1,0 +1,34 @@
+# GRC configuration for cabal
+# Green for positive/progress messages
+regexp=^(Building|Installing|Linking|Preprocessing|Configuring|Starting|Completed|Running|PASS|OK)
+colours=green
+count=once
+
+# Yellow for warnings or less critical info
+regexp=^(Warning:|Skipping|Rebuilding|Upgrading|Resolving|Downloading|In order)
+colours=yellow
+count=once
+
+# Red for errors or failures
+regexp=^(Error:|FAIL|Failed)
+colours=red
+count=once
+
+# Magenta for test suite names
+regexp=^Test suite\s+([^:]+):
+colours=magenta
+count=more
+
+# Cyan for package names and versions during build steps
+regexp=^([A-Za-z0-9_-]+)-([0-9]+\.[0-9]+(\.[0-9]+)*(\.[0-9]+)*)\s+\((lib|exe|test|bench)\)
+colours=cyan
+count=more
+
+# Blue for file paths or log locations
+regexp=^(/\[^/ \]*)+/?
+colours=blue
+count=more
+
+regexp=^\S+\.log
+colours=blue
+count=more 

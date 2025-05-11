@@ -1,0 +1,67 @@
+# Cabal build artifacts
+dist/
+dist-newstyle/
+cabal-dev/
+
+# Cabal repl history
+.cabal-repl
+
+# Stack build artifacts
+.stack-work/
+
+# Haskell GHCi files
+*.o
+*.hi
+*.dyn_o
+*.dyn_hi
+*.hie
+*.chi
+
+# Profiling and coverage
+*.prof
+*.aux
+*.hp
+*.hpc
+*.tix
+.hpc/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnail cache files
+._*
+Thumbs.db
+
+# IDE / Editor specific files
+# VSCode
+.vscode/
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+# Emacs
+*~
+.#*
+# Vim
+*.swp
+*.swo
+*.*.swp
+*.*.swo
+# Direnv
+.direnv/
+.envrc
+
+# Haskell Language Server cache
+.hlint.yaml
+.hls/
+.ghc.environment.*
+
+# Local configuration files (user should decide if they want to commit specific versions)
+cabal.project.local
+stack.yaml.lock 

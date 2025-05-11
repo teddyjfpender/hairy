@@ -1,11 +1,12 @@
--- cabal.project (at the root of your workspace)
+-- project root `cabal.project` file
 -- your shared library
-packages: 00_common-lib/common-lib.cabal
-          01_tutorial-basic/tutorial-basic.cabal
-          02_tutorial-recursion/tutorial-recursion.cabal
+packages: core/core.cabal
+          core/directory/directory.cabal
+
+tests: True
 
 -- you can also use globs if you like:
--- packages: common-lib/*.cabal, tutorial-*/tutorial-*.cabal
+-- packages: common-lib/*.cabal, tutorial-*/tutorial-*.cabal, core/*.cabal, core/directory/*.cabal
 
 -- Optional: pin GHC / resolver in a cabal.project.freeze
 -- after your first successful build:
