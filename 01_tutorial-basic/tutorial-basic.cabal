@@ -1,0 +1,11 @@
+cabal-version:     >=1.10
+name:              tutorial-basic
+version:           0.1.0.0
+build-type:        Simple
+
+executable tutorial-basic
+  main-is:             Main.hs
+  hs-source-dirs:      src
+  build-depends:       base >=4.14 && <5
+                     , common-lib
+  default-language:    Haskell2010

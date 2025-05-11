@@ -1,0 +1,12 @@
+-- cabal.project (at the root of your workspace)
+-- your shared library
+packages: 00_common-lib/common-lib.cabal
+          01_tutorial-basic/tutorial-basic.cabal
+          02_tutorial-recursion/tutorial-recursion.cabal
+
+-- you can also use globs if you like:
+-- packages: common-lib/*.cabal, tutorial-*/tutorial-*.cabal
+
+-- Optional: pin GHC / resolver in a cabal.project.freeze
+-- after your first successful build:
+-- > cabal freeze
