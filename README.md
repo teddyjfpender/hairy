@@ -1,10 +1,10 @@
-\
-[<img src="./hairy.png" alt="HAIRY Prover Logo" width="200"/>]()
-
 # HAIRY - STARK Prover
+<p align="center">
+  <img src="./public/images/hairy.png" alt="HAIRY Prover Logo" width="100%">
+</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/<your-github-username>/<your-repo-name>/haskell-ci.yml?branch=main)](https://github.com/<your-github-username>/<your-repo-name>/actions/workflows/haskell-ci.yml)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/teddyjfpender/hairy/haskell-ci.yml?branch=main)](https://github.com/teddyjfpender/hairy/actions/workflows/haskell-ci.yml)
 [![Hackage](https://img.shields.io/hackage/v/<your-hackage-package-name>.svg)](https://hackage.haskell.org/package/<your-hackage-package-name>)
 [![Stackage LTS](http://stackage.org/package/<your-hackage-package-name>/badge/lts)](http://stackage.org/lts/package/<your-hackage-package-name>)
 [![Stackage Nightly](http://stackage.org/package/<your-hackage-package-name>/badge/nightly)](http://stackage.org/nightly/package/<your-hackage-package-name>)
@@ -59,8 +59,8 @@ Before you begin, ensure you have the following installed:
 
 Clone the repository:
 ```bash
-git clone https://github.com/<your-github-username>/<your-repo-name>.git
-cd <your-repo-name>
+git clone https://github.com/teddyjfpender/hairy.git
+cd hairy
 ```
 
 ### Using Cabal
