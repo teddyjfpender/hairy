@@ -4,7 +4,7 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/teddyjfpender/hairy/haskell-ci.yml?branch=main)](https://github.com/teddyjfpender/hairy/actions/workflows/haskell-ci.yml)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/teddyjfpender/hairy/ci.yml?branch=main)](https://github.com/teddyjfpender/hairy/actions/workflows/ci.yml)
 [![Hackage](https://img.shields.io/hackage/v/<your-hackage-package-name>.svg)](https://hackage.haskell.org/package/<your-hackage-package-name>)
 [![Stackage LTS](http://stackage.org/package/<your-hackage-package-name>/badge/lts)](http://stackage.org/lts/package/<your-hackage-package-name>)
 [![Stackage Nightly](http://stackage.org/package/<your-hackage-package-name>/badge/nightly)](http://stackage.org/nightly/package/<your-hackage-package-name>)
@@ -134,6 +134,11 @@ To run all test suites in the project:
 cabal test all
 ```
 This command will execute all test suites defined in the `.cabal` files of your local packages (e.g., `m31-tests` from the `core` package).
+
+If you're looking to create some coverage reports then you can run:
+```bash
+cabal test all --enable-coverage
+```
 
 ## Development
 

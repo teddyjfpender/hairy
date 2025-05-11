@@ -41,6 +41,7 @@ module Field.M31
   , reduce
   , inverse
   , pow2147483645
+  , pow2
   -- Re-exporting fromInteger for convenience, though it's part of Num
   , fromInteger
   ) where

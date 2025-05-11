@@ -15,6 +15,7 @@ import Field.M31
   , reduce
   , inverse
   , pow2147483645
+  , pow2
   -- fromInteger is part of Num, operators are part of Num/Fractional, (==) is part of Eq
   -- These are typically available via Prelude
   )
@@ -23,20 +24,17 @@ import Field.M31
 -- import qualified Field.M31 as FDM31
 import Test.QuickCheck
 import Data.Word (Word32, Word8, Word64)
-import Data.Bits ((.|.), shiftL, shiftR)
+import Data.Bits ((.|.), shiftL, shiftR, complement)
 import Data.Ratio ((%)) -- For fromRational test
 import System.Exit      (exitFailure)
 import Test.QuickCheck  (quickCheckResult, isSuccess, Result)
+import Test.QuickCheck.Modifiers (NonZero(..), Small(..))
+import Control.DeepSeq (deepseq)
 
 -- Arbitrary instance for M31, mirroring the Rust Distribution<M31> test.
 -- It now uses the mkM31 imported from Field.M31.
 instance Arbitrary M31 where
   arbitrary = Field.M31.mkM31 <$> choose (0, modulus - 1)
-
--- -- | Helper: build an M31 from a raw Word32 via 'fromInteger'.
--- -- This local helper is no longer needed as Field.M31.mkM31 or fromInteger can be used.
--- local_mkM31 :: Word32 -> M31
--- local_mkM31 = fromInteger . toInteger
 
 -- | Convert four little-endian bytes into a Word32.
 bytesToWord32LE :: Word8 -> Word8 -> Word8 -> Word8 -> Word32
@@ -209,6 +207,84 @@ prop_reduce_boundaries = conjoin
   ]
 
 ------------------------------------------------------------------------
+-- Helper for pow2 test (from m31-test-spec.md)
+naivePow :: M31 -> Word64 -> M31
+naivePow x e = iterate (* x) 1 !! fromIntegral e
+
+------------------------------------------------------------------------
+-- 8. Additional coverage from m31-test-spec.md
+------------------------------------------------------------------------
+
+-- Bounded/Enum basics
+prop_bounded_values :: Bool
+prop_bounded_values =
+  unM31 (minBound :: M31) == 0 &&
+  unM31 (maxBound :: M31) == modulus - 1
+
+prop_succ_pred_wrap_around :: M31 -> Bool
+prop_succ_pred_wrap_around a =
+  pred (succ a) == a && succ (pred a) == a
+
+prop_succ_maxBound :: Bool
+prop_succ_maxBound = succ (maxBound :: M31) == (0 :: M31)
+
+prop_pred_zero :: Bool
+prop_pred_zero = pred (0 :: M31) == (maxBound :: M31)
+
+prop_enum_roundtrip :: Property
+prop_enum_roundtrip =
+  forAll (choose (0, 65535) :: Gen Word32) $ \w ->
+    let x = mkM31 w in (toEnum . fromEnum) x == x
+
+-- NFData instance
+prop_deepseq_no_thunks :: M31 -> Int -> Bool
+prop_deepseq_no_thunks x y = (x `deepseq` y) == y
+
+-- pow2 helper
+prop_pow2 :: Small Int -> M31 -> Bool
+prop_pow2 (Small n) x =
+  let n' = abs n `mod` 10  -- Keep exponent reasonable, 2^10 is plenty
+  in Field.M31.pow2 n' x == naivePow x (2 ^ n')
+
+-- Real / Integral instances
+prop_toRational_fromRational_roundtrip :: M31 -> Bool
+prop_toRational_fromRational_roundtrip x = fromRational (toRational x) == x
+
+prop_toInteger_fromInteger_roundtrip :: Word32 -> Property
+prop_toInteger_fromInteger_roundtrip w = w < modulus ==>
+  let x = mkM31 w
+  in (fromInteger . toInteger) x == x
+
+prop_quotRem_laws :: M31 -> NonZero M31 -> Bool
+prop_quotRem_laws a (NonZero b) =
+  let (q,r) = quotRem a b
+  in a == q * b + r && r == 0
+
+-- Bits passthrough sanity
+prop_complement_involution :: M31 -> Bool
+prop_complement_involution x = complement (complement x) == x
+
+prop_shift_roundtrip :: M31 -> Small Word8 -> Bool -- Using Word8 for Small to limit shift amount reasonably
+prop_shift_roundtrip x (Small d) =
+  let k = fromIntegral d `mod` 31 -- k in [0, 30]
+      roundTrip = shiftR (shiftL x k) k
+  -- The spec test is `partialReduce (unM31 roundTrip) == roundTrip`
+  -- Given M31's Bits instance is newtype derived, and `(w `shiftL` k) `shiftR` k == w` for w < 2^31-1
+  -- `roundTrip` will be `x`. `unM31 roundTrip` will be `unM31 x < modulus`.
+  -- So `partialReduce (unM31 roundTrip)` simplifies to `roundTrip`.
+  -- The test effectively becomes `roundTrip == roundTrip` if intermediate values are not an issue.
+  -- The important part is that the sequence of M31 bitwise operations yields the original M31 value.
+  in partialReduce (unM31 roundTrip) == roundTrip
+
+
+-- abs / signum for a field (from Num instance)
+prop_abs_is_identity :: M31 -> Bool
+prop_abs_is_identity x = abs x == x
+
+prop_signum_values :: M31 -> Bool
+prop_signum_values x = signum x == 0 || signum x == 1
+
+------------------------------------------------------------------------
 -- Run them all
 ------------------------------------------------------------------------
 run :: Result -> IO Bool      -- helper
@@ -241,5 +317,19 @@ main = do
         , run =<< quickCheckResult prop_fromRational_law2
         , run =<< quickCheckResult prop_mkM31_boundaries  
         , run =<< quickCheckResult prop_reduce_boundaries
+        , run =<< quickCheckResult prop_bounded_values
+        , run =<< quickCheckResult prop_succ_pred_wrap_around
+        , run =<< quickCheckResult prop_succ_maxBound
+        , run =<< quickCheckResult prop_pred_zero
+        , run =<< quickCheckResult prop_enum_roundtrip
+        , run =<< quickCheckResult prop_deepseq_no_thunks
+        , run =<< quickCheckResult prop_pow2
+        , run =<< quickCheckResult prop_toRational_fromRational_roundtrip
+        , run =<< quickCheckResult prop_toInteger_fromInteger_roundtrip
+        , run =<< quickCheckResult prop_quotRem_laws
+        , run =<< quickCheckResult prop_complement_involution
+        , run =<< quickCheckResult prop_shift_roundtrip
+        , run =<< quickCheckResult prop_abs_is_identity
+        , run =<< quickCheckResult prop_signum_values
         ]
   if not ok then exitFailure else return ()

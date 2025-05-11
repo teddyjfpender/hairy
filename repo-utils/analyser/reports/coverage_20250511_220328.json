@@ -1,0 +1,54 @@
+{
+  "generated_at": "2025-05-11T22:03:28",
+  "overall_coverage_percent": 44.46764091858038,
+  "files": {
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/cm31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.CM31.hs.html": {
+      "executed": 15,
+      "always_true": 1,
+      "always_false": 1,
+      "never_executed": 23,
+      "total": 40,
+      "coverage_percent": 42.5
+    },
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/cm31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.M31.hs.html": {
+      "executed": 37,
+      "always_true": 2,
+      "always_false": 4,
+      "never_executed": 73,
+      "total": 116,
+      "coverage_percent": 37.06896551724138
+    },
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/m31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.M31.hs.html": {
+      "executed": 65,
+      "always_true": 2,
+      "always_false": 1,
+      "never_executed": 45,
+      "total": 113,
+      "coverage_percent": 60.176991150442475
+    },
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/qm31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.QM31.hs.html": {
+      "executed": 23,
+      "always_true": 1,
+      "always_false": 1,
+      "never_executed": 29,
+      "total": 54,
+      "coverage_percent": 46.2962962962963
+    },
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/qm31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.CM31.hs.html": {
+      "executed": 15,
+      "always_true": 1,
+      "always_false": 1,
+      "never_executed": 23,
+      "total": 40,
+      "coverage_percent": 42.5
+    },
+    "build/aarch64-linux/ghc-9.6.7/core-0.1.0.0/t/qm31-tests/hpc/vanilla/html/core-0.1.0.0-inplace/Field.M31.hs.html": {
+      "executed": 37,
+      "always_true": 2,
+      "always_false": 4,
+      "never_executed": 73,
+      "total": 116,
+      "coverage_percent": 37.06896551724138
+    }
+  }
+}
