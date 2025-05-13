@@ -10,12 +10,16 @@ module Field.QM31
   , mkQM31
   , fromPartialEvals
   , mulCM31
+  , conjugate  -- explicit conjugation
+  , norm       -- explicit norm
+  , square     -- explicit squaring
   ) where
 
 import Data.Word       (Word32)
 import Data.Ratio      (numerator, denominator)
 import GHC.Generics    (Generic)
 import Control.DeepSeq (NFData)
+import Foreign.Storable (Storable(..))
 import Field.CM31      (CM31, mkCM31, unCM31)
 import Field.M31       (M31, unM31)
 
@@ -25,7 +29,7 @@ data QM31 = QM31
   {-# UNPACK #-} !CM31  -- ^ coefficient of 1
   {-# UNPACK #-} !CM31  -- ^ coefficient of u
   deriving stock   (Eq, Ord, Generic)
-  deriving anyclass (NFData)
+  deriving anyclass (NFData, Storable)
 
 -- | Split into the two CM31 components.
 unQM31 :: QM31 -> (CM31, CM31)
@@ -40,6 +44,21 @@ mkQM31 a0 a1 a2 a3 =
 -- | Constant R = 2 + i in CM31.
 r :: CM31
 r = mkCM31 2 1
+
+-- | Quadratic conjugation: (a+bi) + (c+di)u -> (a+bi) - (c+di)u
+{-# INLINE conjugate #-}
+conjugate :: QM31 -> QM31
+conjugate (QM31 a b) = QM31 a (negate b)
+
+-- | Field norm to CM31: N(z) = z * conjugate(z)
+{-# INLINE norm #-}
+norm :: QM31 -> CM31
+norm (QM31 a b) = a * a - r * (b * b)
+
+-- | Squaring: z² = (a+bi)² + R(c+di)² + 2(a+bi)(c+di)u
+{-# INLINE square #-}
+square :: QM31 -> QM31
+square (QM31 a b) = QM31 (a * a + r * (b * b)) (2 * a * b)
 
 -- | Multiply a QM31 by a CM31 scalar.
 {-# INLINE mulCM31 #-}
@@ -83,13 +102,12 @@ instance Num QM31 where
 instance Fractional QM31 where
   {-# INLINE recip #-}
   recip (QM31 a b) =
-    let b2          = b * b                      -- CM31
-        (b2_real, b2_imag) = unCM31 b2          -- destructure CM31 using unCM31
-        -- ib2 corresponds to i * b^2. If b^2 = x + yi, then i*b^2 = -y + xi.
-        -- mkCM31 takes (real, imag) parts as Word32.
-        ib2         = mkCM31 (unM31 (negate b2_imag)) (unM31 b2_real) -- construct CM31 using mkCM31
-        denom       = a * a - (b2 + b2 + ib2)    -- CM31
-        denomInv    = recip denom                 -- CM31 inverse
-    in QM31 (a * denomInv) (negate b * denomInv)
+    let denom = norm (QM31 a b)
+    in QM31 (a / denom) (negate b / denom)
   {-# INLINE fromRational #-}
   fromRational r' = fromInteger (numerator r') / fromInteger (denominator r')
+
+-- | RULES for fusing conjugate . conjugate into id
+{-# RULES
+"conjugate/conjugate" forall x. conjugate (conjugate x) = x
+  #-}

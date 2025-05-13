@@ -1,0 +1,202 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{enumitem}
+
+%--------------------------------------------------------------------
+%  Mathematical specification of the quadratic extension field CM31
+%  (a + b i with i^2 = -1) over GF(2^{31}-1)
+%  Target language for implementation: Haskell
+%--------------------------------------------------------------------
+
+\begin{document}
+
+\section{Base field recap}
+
+Let
+\[
+   P = 2^{31}-1 = 2147483647
+   \quad\text{and}\quad
+   \mathbb{F}_{P} = \{\,0,\dots,P-1\,\}
+\]
+with canonical representation, reduction and arithmetic
+as specified in the \texttt{M31} document.
+
+\section{Quadratic extension}
+
+\subsection{Irreducible polynomial}
+
+Because \(P \equiv 3 \pmod 4\), the element \(-1\) is
+\emph{not} a quadratic residue in \(\mathbb{F}_{P}\).  
+Hence the polynomial
+\[
+   f(x)=x^{2}+1\in\mathbb{F}_{P}[x]
+\]
+is irreducible, and the quotient ring
+\[
+   \mathbb{K} := \mathbb{F}_{P}[x]/(x^{2}+1)
+\]
+is a field of order \(P^{2}\).
+
+\subsection{Canonical representation}
+
+Choose the integral basis \(\{1,i\}\) with \(i^{2}=-1\).
+An element is written
+\[
+   z = a + b\,i,
+   \quad a,b\in\mathbb{F}_{P},
+\]
+and represented concretely by the ordered pair
+\[
+   \operatorname{rep}(z) = (a,b)\in\mathcal{C}\times\mathcal{C},
+   \qquad\mathcal{C}=[0,P-1].
+\]
+For serialisation use a little-endian byte layout
+
+\[
+   \text{bytes}(z)=\verb|LE32(a)|\;\Vert\;\verb|LE32(b)|\in\{0,\dots,255\}^{8}.
+\]
+
+\section{Core operations}
+
+Throughout, \(a,b,c,d\in\mathcal{C}\).
+
+\begin{enumerate}[label=\textbf{O\arabic*}.]
+\item \textbf{Addition, negation, subtraction}
+      \[
+        (a,b) \oplus (c,d) = (a\!+\!c,\; b\!+\!d),
+        \qquad
+        \ominus(a,b) = (-a,\,-b),
+        \qquad
+        (a,b)\ominus(c,d)=(a\!-c,\;b\!-d),
+      \]
+      where \(\pm\) are the corresponding \texttt{M31} operations.
+
+\item \textbf{Multiplication}
+      \[
+        (a,b)\otimes(c,d)
+        \;=\;
+        (\,a\,c - b\,d,\; a\,d + b\,c\,).
+        \tag{$*$}
+      \]
+      Cost: \(4\) \texttt{M31} multiplies \(+\;2\) additions/subtractions.
+
+\item \textbf{Squaring}
+      \[
+        (a,b)^{2} = (a^{2}-b^{2},\;2ab).
+      \]
+
+\item \textbf{Conjugation}
+      \[
+        \overline{(a,b)} = (a,-b).
+      \]
+
+\item \textbf{Norm}
+      \[
+        N(a,b) = (a,b)\,\overline{(a,b)}
+                = (a^{2}+b^{2},\,0)\in\mathbb{F}_{P}\subset\mathbb{K}.
+      \]
+
+\item \textbf{Inverse}\;(\(z\neq0\))
+      \[
+        z^{-1} = \dfrac{\overline{z}}{N(z)}
+               \;=\;
+        \bigl(a,-b\bigr)\;*\;N(a,b)^{-1},
+      \]
+      where \(N(a,b)^{-1}\) is the \texttt{M31} inverse of \(a^{2}+b^{2}\).
+
+\item \textbf{Embedding of \(\mathbb{F}_{P}\)}
+      \[
+         \iota\colon\mathbb{F}_{P}\hookrightarrow\mathbb{K},
+         \qquad
+         \iota(a)=(a,0).
+      \]
+\end{enumerate}
+
+\section{Field axioms}
+
+For all \(x,y,z\in\mathbb{K}\) the seven axioms (commutativity,
+associativity, identities, inverses, distributivity)
+listed for \texttt{M31} hold \emph{component-wise} together with
+\[
+   i^{2} = -1
+   \quad\text{and}\quad
+   \overline{\overline{z}}=z,\;
+   z\,\overline{z}=N(z).
+\]
+
+\section{Complexities}
+
+\[
+\begin{array}{l|c}
+\text{operation} & \text{M31 cost} \\ \hline
+\oplus,\ominus & 2\text{ adds} \\
+\otimes & 4 \text{ mults} + 2 \text{ adds} \\
+\text{inverse} & 1\text{ conj} + 2\text{ sqrs} + 1\text{ add}
+                 + \text{M31.inverse} + 2\text{ mults}
+\end{array}
+\]
+
+\section{Testing specification (Haskell)}
+
+\subsection{Property-based tests (QuickCheck)}
+
+\begin{enumerate}[label=\textbf{Q\arabic*}.]
+\item \textbf{Canonical range}  
+      \(\forall(a,b).\;0\le a,b < P\).
+\item \textbf{Field laws}  
+      Verify axioms P1–P7 for \(100\,000\) random triples of \(\mathbb{K}\).
+\item \textbf{Unit element}  
+      \(\forall z.\; z\otimes 1 = z \land 1\otimes z = z\).
+\item \textbf{Conjugation involution}  
+      \(\forall z.\;\overline{\overline{z}}=z\).
+\item \textbf{Norm property}  
+      \(\forall z.\;z\otimes\overline{z} = N(z)\).
+\item \textbf{Inverse correctness}  
+      \(\forall z\neq0.\;z\otimes z^{-1}=1\).
+\item \textbf{$i^{2}=-1$}  
+      \((0,1)^{2}=(-1,0)\).
+\item \textbf{Embedding consistency}  
+      \(\forall a\in\mathbb{F}_{P}.\;\iota(a)\) behaves
+      as a subfield element w.r.t.\ both \(\oplus\) and \(\otimes\).
+\end{enumerate}
+
+\subsection{Deterministic unit tests}
+
+\begin{enumerate}[label=\textbf{T\arabic*}.]
+\item Check the Rust examples verbatim  
+      \( (1,2)^{-1}(1,2)= (1,0)\), etc.
+\item Edge cases \((0,0),(1,0),(0,1),(P\!-\!1,P\!-\!1)\).
+\item Serialisation: round-trip
+      \(100\) random elements through the 8-byte
+      little-endian format.
+\item Attempt cast \((a,b)\to\mathbb{F}_{P}\) succeeds
+      iff \(b=0\).
+\end{enumerate}
+
+\subsection{Performance goals}
+
+\begin{itemize}[nosep]
+\item Addition/negation \(<\!25\)\,ns.
+\item Multiplication \(<\!120\)\,ns.
+\item Inversion \(<\!2\)\,$\mu$s.
+\end{itemize}
+
+\section{Haskell implementation hints}
+
+\begin{itemize}[nosep]
+\item Re-use the previously defined
+      \verb|newtype M31 = M31 Word32|.
+\item Define
+      \verb|data CM31 = CM31 {-# UNPACK #-}!M31 {-# UNPACK #-}!M31|.
+\item Derive \verb|Show|, \verb|Eq|, and implement
+      \verb|Num|, \verb|Fractional|, \verb|Enum|, \verb|Random|.
+\item Inline small functions and mark
+      \verb|CM31| as \verb|Storable|/ \verb|Prim| for SIMD-friendly code.
+\item Use RULES to fuse \verb|conjugate . conjugate| into \verb|id|.
+\item Consider Karatsuba if multiplication
+      dominates the workload (rare for degree 2).
+\end{itemize}
+
+\end{document}

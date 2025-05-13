@@ -1,0 +1,233 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{enumitem}
+
+%--------------------------------------------------------------------
+%  Mathematical specification of the \texttt{M31} field (GF(2^{31}-1))
+%  Target language for implementation: Haskell
+%--------------------------------------------------------------------
+
+\begin{document}
+
+\section{Algebraic setting}
+
+\subsection{Prime modulus}
+\[
+  P \;=\; 2^{31}-1 \;=\; 2147483647
+\]
+$P$ is a Mersenne prime.  
+Define the finite field
+\[
+  \mathbb{F}_{P} \;=\; \{\,0,1,\dots,P-1 \,\},
+\]
+with the usual addition and multiplication modulo~$P$.
+
+\subsection{Canonical representation}
+Every field element is represented by an unsigned
+32-bit integer%
+\footnote{Because $P<2^{32}$ the representation is injective.}
+\[
+   \operatorname{rep}\colon\mathbb{F}_{P}\longrightarrow\{0,\dots,2^{32}-1\},
+   \qquad \operatorname{rep}(x)=x.
+\]
+The \emph{canonical range} is
+$
+  \mathcal{C}= [0,P-1].
+$
+Operations \textbf{must} return results in~$\mathcal{C}$.
+
+\vspace{-0.25\baselineskip}
+\section{Core operations}
+
+Throughout, let $x,y\in\mathcal{C}$ and $z\in\{0,\dots,2P-1\}$.
+
+\begin{enumerate}[label=\textbf{O\arabic*}.]
+\item \textbf{Partial reduction}  
+      \[
+         \operatorname{partialReduce}(z)=
+         \begin{cases}
+             z-P &\text{if } z\ge P,\\[4pt]
+             z   &\text{otherwise.}
+         \end{cases}
+      \]
+      \textit{Pre-condition:} $z\in[0,2P)$.\medskip
+
+\item \textbf{Full reduction}  
+      For $w\in[0,P^{2})$,
+      \[
+        \operatorname{reduce}(w)
+        \;=\;
+        \Bigl(\bigl(\tfrac{w}{2^{31}}\bigr)+w+1\Bigr)
+        \bmod 2^{31}
+        \;\;=\;\;
+        w \bmod P.
+      \]
+      (\emph{Explanation:} because $2^{31}\equiv1\pmod P$ we may
+      fold every $2^{31}$-block into the low word.)\medskip
+
+\item \textbf{Addition}  
+      \[
+        x\oplus y \;=\;
+        \operatorname{partialReduce}(x+y).
+      \]
+
+\item \textbf{Negation}  
+      \[
+        \ominus x \;=\;
+        \operatorname{partialReduce}(P-x).
+      \]
+
+\item \textbf{Subtraction}  
+      \[
+        x\ominus y
+        \;=\;
+        \operatorname{partialReduce}(x+P-y).
+      \]
+
+\item \textbf{Multiplication}  
+      \[
+        x\otimes y \;=\; \operatorname{reduce}(xy),
+        \quad xy\text{ computed in }[0,P^{2}).
+      \]
+
+\item \textbf{Squaring} $\operatorname{square}(x)=x\otimes x$.
+
+\item \textbf{Inverse} (Fermat)  
+      \[
+        \operatorname{inv}(x) = x^{P-2}\pmod P,
+        \qquad x\neq0.
+      \]
+      An optimised addition-chain requiring $37$ multiplications is
+      supplied below.\medskip
+
+\item \textbf{Complex conjugation}  
+      The field is prime\;⇒\;identity map.
+\end{enumerate}
+
+\subsection{Optimised exponent $P-2=2147483645$}
+
+Let $\operatorname{sqn}^{(k)}(x)=x^{2^{k}}$.  
+Define
+\[
+\begin{aligned}
+t_{0}&=\operatorname{sqn}^{(2)}(x)\cdot x,\\
+t_{1}&=\operatorname{sqn}^{(1)}(t_{0})\cdot t_{0},\\
+t_{2}&=\operatorname{sqn}^{(3)}(t_{1})\cdot t_{0},\\
+t_{3}&=\operatorname{sqn}^{(1)}(t_{2})\cdot t_{0},\\
+t_{4}&=\operatorname{sqn}^{(8)}(t_{3})\cdot t_{3},\\
+t_{5}&=\operatorname{sqn}^{(8)}(t_{4})\cdot t_{3},\\[4pt]
+\operatorname{inv}(x)&=\operatorname{sqn}^{(7)}(t_{5})\cdot t_{2}.
+\end{aligned}
+\]
+Correctness: each multiplication and square
+raises $x$ to a power whose binary expansion equals
+$P-2=1111111111111111111111111111101_{(2)}$.
+
+\section{Auxiliary conversions}
+
+\begin{description}[style=nextline,labelwidth=3.2cm,leftmargin=3.3cm]
+\item[Int\,$\to$\,$\mathbb{F}_{P}$:]
+      \(
+        \operatorname{fromInt}(n)=
+        \begin{cases}
+            \operatorname{reduce}(\lvert n\rvert) & n\ge0,\\[4pt]
+            \operatorname{reduce}(2P-\lvert n\rvert) & n<0.
+        \end{cases}
+      \)
+
+\item[$\mathbb{F}_{P}$\,$\to$\,little-endian bytes:]
+      store $\operatorname{rep}(x)$ in $4$~bytes.
+\end{description}
+
+\section{Complexities}
+
+All arithmetic except inversion is $O(1)$.  
+\(\operatorname{inv}\) costs \(37\) multiplies \(+\;31\) squares.
+
+\section{Reference properties}
+
+For all $a,b,c\in\mathbb{F}_{P}$:
+\[
+\begin{aligned}
+&\text{P1 } a\oplus b = b\oplus a
+&&\text{(comm.\,+)}\\
+&\text{P2 } (a\oplus b)\oplus c = a\oplus(b\oplus c)
+&&\text{(assoc.\,+)}\\
+&\text{P3 } a\oplus0 = a,\; a\ominus a = 0
+&&\text{(ident.\,+/inv.)}\\
+&\text{P4 } a\otimes b = b\otimes a
+&&\text{(comm.\,$\times$)}\\
+&\text{P5 } (a\otimes b)\otimes c = a\otimes(b\otimes c)
+&&\text{(assoc.\,$\times$)}\\
+&\text{P6 } a\otimes1 = a,\; a\neq0\Rightarrow a\otimes\operatorname{inv}(a)=1
+&&\text{(ident.\,$\times$/inv.)}\\
+&\text{P7 } a\otimes(b\oplus c)=a\otimes b\oplus a\otimes c
+&&\text{(distrib.)}
+\end{aligned}
+\]
+
+\section{Testing specification (Haskell‐centric)}
+
+\subsection{Property-based tests (QuickCheck)}
+
+\begin{enumerate}[label=\textbf{Q\arabic*}.]
+\item \textbf{Canonical range}  
+      \(\forall x\;.\;0\le x < P\).
+\item \textbf{Field laws}  
+      Verify P1–P7 above for \texttt{100\,000} random triples.
+\item \textbf{Inverse correctness}  
+      \(\forall x\neq0.\;x\otimes\operatorname{inv}(x)=1\).
+\item \textbf{Partial vs.\ full reduction}  
+      Generate $z\in[0,2P)$ and check  
+      \(\operatorname{partialReduce}(z)=z\bmod P\).
+\item \textbf{Reduce identity}  
+      Generate $w\in[0,P^{2})$ and check  
+      \(\operatorname{reduce}(w)=w\bmod P\).
+\item \textbf{Optimised exponent}  
+      \(\forall x.\;\operatorname{inv}(x)=x^{P-2}\pmod P\).
+\end{enumerate}
+
+\subsection{Deterministic unit tests}
+
+Mimic the Rust suite.
+
+\begin{enumerate}[label=\textbf{T\arabic*}.]
+\item \textbf{Edge cases}:  
+      $0,1,P-1$ for every operation.
+\item \textbf{Conversion tests}:  
+      $\operatorname{fromInt}(-1)=P-1$,  
+      $\operatorname{fromInt}(-10)=P-10$ etc.
+\item \textbf{Byte serialisation}:  
+      Round-trip $100$ random elements.
+\item \textbf{Mul/Add/Neg consistency}:  
+      For $10\,000$ pseudorandom pairs $(x,y)$ compare
+      against \(\bmod\)-math using \verb|Integer|.
+\end{enumerate}
+
+\subsection{Performance assertions (optional)}
+
+\begin{itemize}[nosep]
+\item \(<\!20\)\,ns for addition/negation on current desktop~CPU.
+\item \(<\!60\)\,ns for multiplication.
+\item \(<\!1\)\,$\mu$s for inversion.
+\end{itemize}
+
+\section{Haskell implementation hints}
+
+\begin{itemize}[nosep]
+\item Use \verb|newtype M31 = M31 Word32| with \verb|UNPACK| pragma.
+\item Mark arithmetic with \verb|{-# INLINE #-}|.
+\item Implement \verb|Num|, \verb|Fractional|, \verb|Enum|, \verb|Random|.
+\item Encode \(\operatorname{reduce}\) via the bit-trick:
+      \begin{lstlisting}[language=Haskell,basicstyle=\ttfamily\small]
+reduce :: Word64 -> Word32
+reduce w = fromIntegral $
+           ((w `shiftR` 31) + w + 1) `shiftR` 31 + w
+           .&. 0x7fffffff
+      \end{lstlisting}
+\item For \verb|QuickCheck| generators choose \verb|choose (0,P-1)|.
+\end{itemize}
+
+\end{document}

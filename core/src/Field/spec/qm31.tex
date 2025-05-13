@@ -1,0 +1,228 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{enumitem}
+
+%--------------------------------------------------------------------
+%  Mathematical specification of the quartic extension field QM31
+%  ( (a+bi) + (c+di)u with u^2 = 2+i )
+%  Target language for implementation: Haskell
+%--------------------------------------------------------------------
+
+\begin{document}
+
+\section{Prerequisites}
+
+Recall the prime field
+\(
+   \mathbb{F}_{P}, \; P=2^{31}-1
+\)
+and its quadratic extension
+\(
+   \mathbb{K}=\mathbb{F}_{P}[x]/(x^{2}+1)
+\)
+with basis \(\{1,i\}\;(i^{2}=-1)\), written
+\(a+bi\), \(a,b\in\mathbb{F}_{P}\)
+(cf.\ the \texttt{CM31} document).
+
+\section{Quartic extension}
+
+\subsection{Defining polynomial}
+
+Let
+\[
+   R := 2 + i\in\mathbb{K}.
+\]
+Because \(2+i\) has no square in \(\mathbb{K}\)\footnote{%
+\(2+i\) lies in a coset of \(\mathbb{K}^{\times}/(\mathbb{K}^{\times})^{2}\)
+whose norm to \(\mathbb{F}_{P}\) is not a square.},
+the polynomial
+\[
+   g(x)=x^{2}-R
+\]
+is irreducible over~\(\mathbb{K}\).
+Define the field
+\[
+   \mathbb{L}:=\mathbb{K}[x]/(x^{2}-R),
+\]
+which has order
+\(
+   |\mathbb{L}| = P^{4}
+\)
+and degree \(4\) over \(\mathbb{F}_{P}\).
+
+\subsection{Canonical representation}
+
+Let \(u = x \bmod g(x)\) so that \(u^{2}=R\).
+Choose the basis \(\{1,i,u,iu\}\).
+Every element is written
+\[
+   z = (a+bi) + (c+di)\,u,
+   \qquad a,b,c,d\in\mathbb{F}_{P},
+\]
+and represented concretely by the ordered quadruple
+\[
+   \operatorname{rep}(z) = (a,b,c,d)\in\mathcal{C}^{4},
+   \quad \mathcal{C}=[0,P-1].
+\]
+Serialise with little-endian layout
+\(
+   \text{bytes}(z)=\verb|LE32(a)|\Vert\verb|LE32(b)|\Vert
+                   \verb|LE32(c)|\Vert\verb|LE32(d)|\in\{0,\dots,255\}^{16}.
+\)
+
+\section{Core operations}
+
+Let \(z=(a,b)+(c,d)u\) and \(w=(e,f)+(g,h)u\).
+
+\begin{enumerate}[label=\textbf{O\arabic*}.]
+\item \textbf{Addition/negation/subtraction}
+      \[
+        z\oplus w = (a+e,\;b+f,\;c+g,\;d+h),
+      \quad
+        \ominus z  = (-a,\,-b,\,-c,\,-d),
+      \]
+      using \texttt{M31} arithmetic component-wise.
+
+\item \textbf{Multiplication}
+      Exploit \(u^{2}=R\;(=\;2+i)\):
+      \[
+        (a+bi + (c+di)u)
+        (e+fi + (g+hi)u)
+        = \bigl(ac-bd - (cg-dh) + (ad+bc + (ch+dg))i\bigr)
+      \]
+      \vspace{-1.1\baselineskip}
+      \[
+        \qquad
+        +\;
+        \bigl(ag-bh + (ah+bg)i\bigr)u.
+      \]
+      Implementation formula (four \(\mathbb{K}\)-multiplies):
+      \[
+        z\otimes w =
+        \bigl( (a+bi)(e+fi) + R\,(c+di)(g+hi),\;
+               (a+bi)(g+hi) + (c+di)(e+fi) \bigr).
+        \tag{$*$}
+      \]
+
+\item \textbf{Squaring}
+      Compute with one \(\mathbb{K}\)-multiply and one add:
+      \[
+        z^{2} = (a+bi)^{2} + R\,(c+di)^{2}
+                + 2(a+bi)(c+di)\,u.
+      \]
+
+\item \textbf{Conjugations}
+      \[
+        \overline{i}= -i,
+        \qquad
+        \overline{u}= u,
+        \qquad
+        \widetilde{u}= -u
+        \quad(\text{quadratic conjugation}).
+      \]
+      We require only the latter:
+      \(\tilde{z}=(a+bi)-(c+di)u\).
+
+\item \textbf{Norm to \(\mathbb{K}\)}
+      \[
+        N_{\mathbb{L}/\mathbb{K}}(z)
+        = z\,\tilde{z}
+        = (a+bi)^{2}-R(c+di)^{2}\in\mathbb{K}.
+      \]
+
+\item \textbf{Inverse}  (\(z\neq0\))
+      \[
+        z^{-1}
+        =\frac{\tilde{z}}{N_{\mathbb{L}/\mathbb{K}}(z)}
+        = \frac{(a+bi) - (c+di)u}
+               {(a+bi)^{2} - (2+i)(c+di)^{2}}.
+      \]
+      The denominator is a \texttt{CM31} element whose inverse
+      is computed by the quadratic-field algorithm.
+
+\item \textbf{Embedding chain}
+      \[
+        \mathbb{F}_{P}\xhookrightarrow{\;\iota\;}
+        \mathbb{K}\xhookrightarrow{\;\jmath\;}
+        \mathbb{L},
+        \qquad
+        \jmath(a+bi)=(a,b,0,0).
+      \]
+\end{enumerate}
+
+\section{Field axioms}
+
+All field laws hold on \(\mathbb{L}\); verify via
+relations \(i^{2}=-1,\;u^{2}=R,\;iu=-ui\).
+
+\section{Complexities}
+
+\[
+\begin{array}{l|c}
+\text{operation} & \text{CM31 cost} \\ \hline
+\oplus,\ominus & 2\text{ adds} \\
+\otimes\;(\ref{*}) & 4\text{ mults} + 2\text{ adds} \\
+\text{inverse} & 1\text{ conj}+2\text{ sqrs}+3\text{ adds}
+                 +\text{CM31.inv}+2\text{ mults}
+\end{array}
+\]
+
+\section{Testing specification (Haskell)}
+
+\subsection{Property-based tests (QuickCheck)}
+
+\begin{enumerate}[label=\textbf{Q\arabic*}.]
+\item \textbf{Canonical range}  
+      \(0\le a,b,c,d < P\).
+\item \textbf{Field laws}  
+      Axioms P1–P7 on \(10^{5}\) random triples.
+\item \textbf{Unit element}  
+      \(z\otimes1 = 1\otimes z = z\).
+\item \textbf{Quadratic conjugation}  
+      \(\tilde{\tilde{z}}=z\).
+\item \textbf{Norm property}  
+      \(z\,\tilde{z}=N_{\mathbb{L}/\mathbb{K}}(z)\).
+\item \textbf{Inverse correctness}  
+      \(z\neq0\Rightarrow z\otimes z^{-1}=1\).
+\item \textbf{Defining relation}  
+      \(u^{2}=2+i\) where \(u=(0,0,1,0)\).
+\item \textbf{Embedding integrity}  
+      For all \(x\in\mathbb{K}\subset\mathbb{L}\)
+      the arithmetic agrees with that in \(\mathbb{K}\).
+\end{enumerate}
+
+\subsection{Deterministic unit tests}
+
+\begin{enumerate}[label=\textbf{T\arabic*}.]
+\item Reproduce the Rust suite:  
+      \((1,2,3,4)^{-1}(1,2,3,4)=1\), etc.
+\item Edge cases \((0,0,0,0),(1,0,0,0),(0,0,1,0),(P\!-\!1,\dots)\).
+\item Serialisation round-trip of \(100\) random elements.
+\item Cast to \(\mathbb{F}_{P}\) succeeds iff \(c=d=0\).
+\end{enumerate}
+
+\subsection{Performance goals}
+
+\begin{itemize}[nosep]
+\item Addition \(<\!35\)\,ns.
+\item Multiplication \(<\!250\)\,ns.
+\item Inversion \(<\!4\)\,$\mu$s.
+\end{itemize}
+
+\section{Haskell implementation hints}
+
+\begin{itemize}[nosep]
+\item Re-use \verb|newtype M31| and \verb|data CM31|.
+\item Define
+      \verb|data QM31 = QM31 {-# UNPACK #-}!CM31 {-# UNPACK #-}!CM31|.
+\item Implement \verb|Num|, \verb|Fractional|, \verb|Enum|,
+      \verb|Random| and \verb|Storable|.
+\item Inline small primitives, enable \verb|-funbox-strict-fields|.
+\item Serialise via \verb|poke|/\verb|peek| of four \verb|Word32|.
+\item Exploit VECTOR/SIMD by making \verb|CM31| \verb|Prim| and
+      lifting operations.
+\end{itemize}
+
+\end{document}
