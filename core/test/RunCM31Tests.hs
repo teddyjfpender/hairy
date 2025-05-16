@@ -5,7 +5,14 @@
 -- | QuickCheck tests for Field.CM31, mirroring the original Rust tests.
 module Main (main) where
 
-import Field.CM31 (CM31, mkCM31, unCM31)
+import Field.CM31
+  ( CM31
+  , mkCM31
+  , unCM31
+  , conjugate
+  , norm
+  , square
+  )
 import Field.M31
   ( -- M31       -- Type M31 is not directly used, CM31 uses it internally
     unM31     -- To get Word32 from M31 (used in CM31 tests' Arbitrary instance indirectly, and in intoSlice)
@@ -81,6 +88,26 @@ prop_ops =
          ]
 
 ------------------------------------------------------------------------
+-- 3. Additional property tests
+------------------------------------------------------------------------
+
+prop_conjugate_involution :: CM31 -> Bool
+prop_conjugate_involution x = conjugate (conjugate x) == x
+
+prop_norm_definition :: CM31 -> Bool
+prop_norm_definition x =
+  let (a, b) = unCM31 x
+  in norm x == a * a + b * b
+
+prop_square_definition :: CM31 -> Bool
+prop_square_definition x = square x == x * x
+
+prop_norm_mul_conjugate :: CM31 -> Bool
+prop_norm_mul_conjugate x =
+  let expected = mkCM31 (unM31 (norm x)) 0
+  in x * conjugate x == expected
+
+------------------------------------------------------------------------
 -- 3. intoSlice round‑trip
 ------------------------------------------------------------------------
 prop_intoSlice :: Property
@@ -101,4 +128,9 @@ main = do
   putStrLn "Running CM31 QuickCheck suite..."
   quickCheck prop_inverse
   quickCheck prop_ops
+  quickCheck prop_conjugate_involution
+  quickCheck prop_norm_definition
+  quickCheck prop_square_definition
+  quickCheck prop_norm_mul_conjugate
   quickCheck prop_intoSlice
+
