@@ -8,6 +8,7 @@ library
   exposed-modules:     Field.M31
                      , Field.CM31
                      , Field.QM31
+                     , Utils
   hs-source-dirs:      .
   build-depends:
       base >=4.14 && <5
@@ -48,6 +49,17 @@ test-suite qm31-tests
   build-depends:
       base >=4.14 && <5
     , core        
+    , QuickCheck >=2.14
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite utils-tests
+  type:                exitcode-stdio-1.0
+  main-is:             RunUtilsTests.hs
+  hs-source-dirs:      test
+  build-depends:
+      base >=4.14 && <5
+    , core
     , QuickCheck >=2.14
   default-language:    Haskell2010
   ghc-options:         -Wall
