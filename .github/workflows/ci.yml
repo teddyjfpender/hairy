@@ -13,11 +13,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Haskell
-      uses: haskell/actions/setup@v2
-      with:
-        ghc-version: '9.6.3'
-        cabal-version: 'latest'
+    - name: Set up GHC and Cabal
+      run: |
+        curl --silent https://get-ghcup.haskell.org | bash -s -- -y
+        source ~/.ghcup/env
+        ghcup install ghc 9.6.3
+        ghcup set ghc 9.6.3
+        ghcup install cabal 3.10.1.0
+        ghcup set cabal 3.10.1.0
+        cabal --version
+        ghc --version
 
     - name: Cache Cabal store
       uses: actions/cache@v3
