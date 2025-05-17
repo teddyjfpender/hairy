@@ -20,6 +20,7 @@ This project is built & maintained by AI Agents (shocking!). Idea being that LLM
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+  - [Setup Guide](#setup-guide)
   - [Using Cabal](#using-cabal)
   - [Using Stack](#using-stack)
 - [Usage](#usage)
@@ -59,6 +60,31 @@ Clone the repository:
 git clone https://github.com/teddyjfpender/hairy.git
 cd hairy
 ```
+
+### Setup Guide
+
+To set up the development environment, follow these steps in order:
+
+1. **Initial Setup**: Run the devcontainer setup script first to check prerequisites and prepare the environment:
+   ```bash
+   chmod +x devcontainer-setup.sh
+   ./devcontainer-setup.sh
+   ```
+   This script will check if you have Docker and VS Code installed, pull the necessary Docker image, and offer to open VS Code with the devcontainer.
+
+2. **Container Initialization**: When the devcontainer starts, the `container-setup.sh` script will run automatically to install all dependencies. This may take several minutes. If you need to run this script manually:
+   ```bash
+   chmod +x container-setup.sh
+   ./container-setup.sh
+   ```
+   
+3. **Verify Installation**: Once the setup is complete, verify that everything is working correctly:
+   ```bash
+   cabal build all
+   cabal test all
+   ```
+
+After completing these steps, your development environment will be fully set up with all dependencies installed for offline development.
 
 ### Using Cabal
 
@@ -161,6 +187,57 @@ Information for developers:
   ```bash
   hlint .
   ```
+
+## Development Environment
+
+### Using DevContainer
+
+This project includes a devcontainer configuration for easy development setup. The devcontainer provides a consistent development environment with all necessary tools pre-installed.
+
+To use the devcontainer:
+
+1. Make sure you have Docker and VS Code with the Remote - Containers extension installed.
+2. Run the setup script at the root of the repository:
+   ```bash
+   ./devcontainer-setup.sh
+   ```
+   This script will check prerequisites, pull the required Docker image, and provide options to open the project in VS Code with the devcontainer.
+
+3. Alternatively, you can open the project in VS Code and use the command palette (F1) to select "Remote-Containers: Open Folder in Container..."
+
+The devcontainer includes:
+- GHC 9.6.3
+- Cabal
+- Python 3 with required dependencies
+- All the tools needed for development
+
+### Offline Development
+
+This project is designed to support offline development once the container is set up. The `container-setup.sh` script installs all necessary dependencies and development tools during container initialization, including:
+
+- Haskell development tools (hlint, ormolu, ghcid, cabal-fmt, hoogle)
+- Python testing and linting tools (pytest, black, flake8, mypy)
+- Common Haskell libraries pre-downloaded for offline use
+- Full documentation via Hoogle
+
+When working in the devcontainer, you should have everything needed without requiring further internet access.
+
+To manually run the setup script (if needed):
+
+```bash
+./container-setup.sh
+```
+
+## Continuous Integration
+
+This project uses GitHub Actions for continuous integration. The CI workflow:
+- Runs on every push to main/master branches and on pull requests
+- Sets up the Haskell environment with GHC 9.6.3
+- Installs Python dependencies
+- Builds and tests all packages
+- Uses caching to speed up builds
+
+You can see the build status in the badge at the top of this README.
 
 ## Contributing
 

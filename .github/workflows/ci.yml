@@ -1,6 +1,10 @@
 name: Haskell CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
@@ -12,11 +16,32 @@ jobs:
     - name: Set up Haskell
       uses: haskell/actions/setup@v2
       with:
-        ghc-version: '9.6.3' # or specify a version like '8.10.7'
-        cabal-version: 'latest' # or specify a version like '3.4'
+        ghc-version: '9.6.3'
+        cabal-version: 'latest'
+
+    - name: Cache Cabal store
+      uses: actions/cache@v3
+      with:
+        path: ~/.cabal/store
+        key: ${{ runner.os }}-cabal-${{ hashFiles('**/*.cabal', 'cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Clean
       run: cabal clean
+
+    - name: Update dependencies
+      run: cabal update
 
     - name: Build
       run: cabal build all

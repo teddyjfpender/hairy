@@ -4,15 +4,26 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "haskell.haskell"
+                "haskell.haskell",
+                "justusadam.language-haskell",
+                "hoovercj.haskell-linter",
+                "ndmitchell.haskell-ghcid",
+                "editorconfig.editorconfig",
+                "timonwong.shellcheck",
+                "ms-python.python"
             ],
             "settings": {
                 "haskell.toolchain": "ghcup",
-                "terminal.integrated.shell.linux": "/bin/bash"
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "editor.formatOnSave": true,
+                "haskell.formattingProvider": "ormolu",
+                "python.linting.enabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.formatting.provider": "black"
             }
         }
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-    "postCreateCommand": "apt-get update && apt-get install -y grc python3 python3-pip && pip3 install -r ./requirements.txt && curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=recommended BOOTSTRAP_HASKELL_CABAL_VERSION=recommended BOOTSTRAP_HASKELL_HLS_VERSION=recommended sh && (grep -qxF 'source /root/.ghcup/env' /root/.bashrc || echo 'source /root/.ghcup/env' >> /root/.bashrc) && (grep -qxF 'source /workspace/.devcontainer/.bashrc' /root/.bashrc || echo 'source /workspace/.devcontainer/.bashrc' >> /root/.bashrc) && mkdir -p /root/.grc && cp /workspace/.devcontainer/cabal /root/.grc/cabal && . /root/.ghcup/env && cabal update && cabal build all"
+    "postCreateCommand": "bash /workspace/container-setup.sh"
 }
