@@ -1,10 +1,10 @@
 cabal-version:       >=1.10
-name:                directory
+name:                examples
 version:             0.1.0.0
 build-type:          Simple
 
 -- This refers to the library defined in core/core.cabal
-executable directory-exe
+executable examples-exe
   main-is:             Main.hs
   hs-source-dirs:      src
   build-depends:

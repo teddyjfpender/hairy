@@ -1,12 +1,12 @@
 -- project root `cabal.project` file
 -- your shared library
 packages: core/core.cabal
-          core/directory/directory.cabal
+          core/examples/examples.cabal
 
 tests: True
 
 -- you can also use globs if you like:
--- packages: common-lib/*.cabal, tutorial-*/tutorial-*.cabal, core/*.cabal, core/directory/*.cabal
+-- packages: common-lib/*.cabal, tutorial-*/tutorial-*.cabal, core/*.cabal, core/examples/*.cabal
 
 -- Optional: pin GHC / resolver in a cabal.project.freeze
 -- after your first successful build:
