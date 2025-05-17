@@ -40,7 +40,7 @@ HAIRY is experimental at best. But it tries to replicated the Stwo repo as best 
 This project uses Cabal and is structured as a multi-package monorepo. The main packages are defined in the root `cabal.project` file:
 
 - `core`: The primary library containing the core STARK proving logic, located in `core/core.cabal`.
-- - `Fields` 
+- `examples`: Sample executables demonstrating the library, located in `core/examples/examples.cabal`.
 - *(Add more packages here as your project evolves)*
 
 The `cabal.project` file orchestrates the build for the entire workspace.

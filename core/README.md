@@ -1,3 +1,4 @@
 # Core
 
-This is a Haskell reproduction of Stwo's `core` [directory](https://github.com/starkware-libs/stwo/tree/dev/crates/prover/src/core) in the `stwo-prover` crate.
+This package hosts the fundamental library code. Field implementations live under `Field/` and their tests in `test/`. Example programs reside in `examples/`.
+
